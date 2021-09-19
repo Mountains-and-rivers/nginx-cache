@@ -384,3 +384,32 @@ http {
 
 }
 ```
+=================================================  
+```
+  location /static {
+    alias /usr/local/etc/nginx/relative-paths/picasso/client/public;
+
+    # If an asset has a query string, it's probably using that query string for cache busting purposes.
+    set $long_lived_caching_strategy 0;
+    if ($query_string) { set $long_lived_caching_strategy 1; }
+
+    if ($long_lived_caching_strategy = 0) {
+      # Cache strategy: caches can store this but must revalidate the content with the server using ETags before serving a 304 Not Modified.
+      set $cache_control "no-cache";
+    }
+
+    if ($long_lived_caching_strategy = 1) {
+      # Cache strategy: proxy caches can store this content, and it's valid for a long time.
+      set $cache_control "public, max-age=86400, s-maxage=86400";  # 1 day in seconds
+    }
+
+    add_header Cache-Control $cache_control;
+
+    # Some types of assets, even when requested with query params, are probably not going to change and should be cacheable by anyone for a long time.
+    location ~* \.(?:jpg|jpeg|gif|png|ico|cur|gz|svg|svgz|mp4|ogg|ogv|webm|htc|ttf)$ {
+      add_header Cache-Control "public max-age=86400, s-maxage=86400";
+      etag off;
+      access_log off;
+    }
+  }
+```
