@@ -37,13 +37,30 @@ mysql  Ver 14.14 Distrib 5.6.25, for Linux (x86_64) using  EditLine wrapper &&�
 在my.cnf中开启慢日志
 
 ```
-long_query_time = 2``slow-query-log = ``on`                                                         `slow-query-log-file = /data/mysql/slow-query.log``log-queries-not-``using``-indexes
+long_query_time = 2
+slow-query-log = on                                                                                                                  
+slow-query-log-file = /data/mysql/slow-query.log
+log-queries-not-using-indexes
 ```
 
 查看是否开启
 
 ```
-mysql> show variables like ``'%slow_query%'``;``+---------------------+----------------------------+``| Variable_name    | Value           |``+---------------------+----------------------------+``| slow_query_log   | ON             |``| slow_query_log_file | /data/mysql/slow-query.log |``+---------------------+----------------------------+` `mysql> show global status like ``'%slow%'``;``+---------------------+-------+``| Variable_name    | Value |``+---------------------+-------+``| Slow_launch_threads | 0   |``| Slow_queries    | 4148 |``+---------------------+-------+
+mysql> show variables like '%slow_query%';
++---------------------+----------------------------+
+| Variable_name       | Value                      |
++---------------------+----------------------------+
+| slow_query_log      | ON                         |
+| slow_query_log_file | /data/mysql/slow-query.log |
++---------------------+----------------------------+
+ 
+mysql> show global status like '%slow%';
++---------------------+-------+
+| Variable_name       | Value |
++---------------------+-------+
+| Slow_launch_threads | 0     |
+| Slow_queries        | 4148  |
++---------------------+-------+
 ```
 
 打开慢查询日志可能会对系统性能有一点点影响，如果你的MySQL是主－从结构，可以考虑打开其中一台从服务器的慢查询日志，这样既可以监控慢查询，对系统性能影响又小，另mysql有自带的命令mysqldumpslow可进行查询，也可以使用pt工具进行分析（pt-query-digest）
@@ -59,13 +76,23 @@ mysqldumpslow -s c -t 20 slow-query.log
 经常会遇见”MySQL: ERROR 1040: Too manyconnections”的情况，一种是访问量确实很高，MySQL服务器抗不住，这个时候就要考虑增加从服务器分散读压力，另外一种情况是MySQL配置文件中max_connections值过小
 
 ```
-mysql> show variables like ``'max_connections'``;``+-----------------+-------+``| Variable_name  | Value |``+-----------------+-------+``| max_connections | 256  |``+-----------------+-------+
+mysql> show variables like 'max_connections';
++-----------------+-------+
+| Variable_name   | Value |
++-----------------+-------+
+| max_connections | 256   |
++-----------------+-------+
 ```
 
 这台MySQL服务器最大连接数是256，然后查询一下服务器响应的最大连接数
 
 ```
-mysql> show global status like ``'Max_used_connections'``;``+----------------------+-------+``| Variable_name    | Value |``+----------------------+-------+``| Max_used_connections | 245  |``+----------------------+-------+
+mysql> show global status like 'Max_used_connections';
++----------------------+-------+
+| Variable_name        | Value |
++----------------------+-------+
+| Max_used_connections | 245   |
++----------------------+-------+
 ```
 
 MySQL服务器过去的最大连接数是245，没有达到服务器连接数上限256，不会出现1040错误，最大连接数占上限连接数的85％左右，如果发现比例在10%以下，MySQL服务器连接数上限设置的过高了
@@ -87,13 +114,24 @@ max_connect_errors 是一个安全的方法。如果一个主机在连接到服�
 key_buffer_size是对MyISAM表性能影响最大的一个参数，下面一台以MyISAM为主要存储引擎服务器的配置
 
 ```
-mysql> show variables like ``'key_buffer_size'``;``+-----------------+------------+``| Variable_name  | Value   |``+-----------------+------------+``| key_buffer_size | 536870912 |``+-----------------+------------+
+mysql> show variables like 'key_buffer_size';
++-----------------+------------+
+| Variable_name   | Value      |
++-----------------+------------+
+| key_buffer_size | 536870912  |
++-----------------+------------+
 ```
 
 分配了512MB内存给key_buffer_size，我们再看一下key_buffer_size的使用情况
 
 ```
-mysql> show global status like ``'key_read%'``;``+------------------------+-------------+``| Variable_name     | Value    |``+------------------------+-------------+``| Key_read_requests   | 27813678764 |``| Key_reads       | 6798830   |``+------------------------+-------------+
+mysql> show global status like 'key_read%';
++------------------------+-------------+
+| Variable_name          | Value       |
++------------------------+-------------+
+| Key_read_requests      | 27813678764 |
+| Key_reads              | 6798830     |
++------------------------+-------------+
 ```
 
 `Key_reads` 代表命中磁盘的请求个数， `Key_read_requests` 是总数
@@ -107,7 +145,13 @@ mysql> show global status like ``'key_read%'``;``+------------------------+-----
 MySQL服务器还提供了key_blocks_*参数
 
 ```
-mysql> show global status like ``'key_blocks_u%'``;``+------------------------+-------------+``| Variable_name     | Value    |``+------------------------+-------------+``| Key_blocks_unused   | 0      |``| Key_blocks_used    | 413543   |``+------------------------+-------------+
+mysql> show global status like 'key_blocks_u%';
++------------------------+-------------+
+| Variable_name          | Value       |
++------------------------+-------------+
+| Key_blocks_unused      | 0           |
+| Key_blocks_used        | 413543      |
++------------------------+-------------+
 ```
 
 Key_blocks_unused 表示未使用的缓存簇(blocks)数，Key_blocks_used表示曾经用到的最大的blocks数，比如这台服务器，所有的缓存都用到了，要么增加key_buffer_size，要么就是过渡索引了，把缓存占满了
@@ -119,7 +163,14 @@ Key_blocks_unused 表示未使用的缓存簇(blocks)数，Key_blocks_used表示
 临时表可以在更高级的查询中使用，其中数据在进一步进行处理（例如 GROUP BY 字句）之前，都必须先保存到临时表中；理想情况下，在内存中创建临时表。但是如果临时表变得太大，就需要写入磁盘中
 
 ```
-mysql> show global status like ``'created_tmp%'``;``+-------------------------+---------+``| Variable_name      | Value  |``+-------------------------+---------+``| Created_tmp_disk_tables | 21197  |``| Created_tmp_files    | 58   |``| Created_tmp_tables   | 1771587 |``+-------------------------+---------+
+mysql> show global status like 'created_tmp%';
++-------------------------+---------+
+| Variable_name           | Value   |
++-------------------------+---------+
+| Created_tmp_disk_tables | 21197   |
+| Created_tmp_files       | 58      |
+| Created_tmp_tables      | 1771587 |
++-------------------------+---------+
 ```
 
 每次创建临时表，Created_tmp_tables增加，如果是在磁盘上创建临时表，Created_tmp_disk_tables也增加,Created_tmp_files表示MySQL服务创建的临时文件文件数
@@ -131,7 +182,13 @@ mysql> show global status like ``'created_tmp%'``;``+-------------------------+-
 我们再看一下MySQL服务器对临时表的配置
 
 ```
-mysql> show variables ``where` `Variable_name ``in` `(``'tmp_table_size'``, ``'max_heap_table_size'``);``+---------------------+-----------+``| Variable_name    | Value   |``+---------------------+-----------+``| max_heap_table_size | 268435456 |``| tmp_table_size   | 536870912 |``+---------------------+-----------+
+mysql> show variables where Variable_name in ('tmp_table_size', 'max_heap_table_size');
++---------------------+-----------+
+| Variable_name       | Value     |
++---------------------+-----------+
+| max_heap_table_size | 268435456 |
+| tmp_table_size      | 536870912 |
++---------------------+-----------+
 ```
 
 只有256MB以下的临时表才能全部放内存，超过的就会用到硬盘临时表
@@ -141,13 +198,23 @@ mysql> show variables ``where` `Variable_name ``in` `(``'tmp_table_size'``, ``'m
 **5）Open Table情况**
 
 ```
-mysql> show global status like ``'open%tables%'``;``+---------------+-------+``| Variable_name | Value |``+---------------+-------+``| Open_tables  | 919  |``| Opened_tables | 1951 |
+mysql> show global status like 'open%tables%';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| Open_tables   | 919   |
+| Opened_tables | 1951  |
 ```
 
 Open_tables 表示打开表的数量，Opened_tables表示打开过的表数量，如果Opened_tables数量过大，说明配置中 table_cache(5.1.3之后这个值叫做table_open_cache)值可能太小，我们查询一下服务器table_cache值
 
 ```
-mysql> show variables like ``'table_cache'``;``+---------------+-------+``| Variable_name | Value |``+---------------+-------+``| table_cache  | 2048 |``+---------------+-------+
+mysql> show variables like 'table_cache';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| table_cache   | 2048  |
++---------------+-------+
 ```
 
 **比较合适的值为：Open_tables / Opened_tables  \* 100% >= 85%   Open_tables / table_cache \* 100% <= 95%**
@@ -157,13 +224,26 @@ mysql> show variables like ``'table_cache'``;``+---------------+-------+``| Vari
 与表的缓存类似，对于线程来说也有一个缓存。 `mysqld` 在接收连接时会根据需要生成线程。在一个连接变化很快的繁忙服务器上，对线程进行缓存便于以后使用可以加快最初的连接
 
 ```
-mysql> show global status like ``'Thread%'``;``+-------------------+-------+``| Variable_name   | Value |``+-------------------+-------+``| Threads_cached  | 46  |``| Threads_connected | 2   |``| Threads_created  | 570  |``| Threads_running  | 1   |``+-------------------+-------+
+mysql> show global status like 'Thread%';
++-------------------+-------+
+| Variable_name     | Value |
++-------------------+-------+
+| Threads_cached    | 46    |
+| Threads_connected | 2     |
+| Threads_created   | 570   |
+| Threads_running   | 1     |
++-------------------+-------+
 ```
 
 如果我们在MySQL服务器配置文件中设置了thread_cache_size，当客户端断开之后，服务器处理此客户的线程将会缓存起来以响应下一个客户 而不是销毁（前提是缓存数未达上限）。Threads_created表示创建过的线程数，如果发现Threads_created值过大的话，表明 MySQL服务器一直在创建线程，这也是比较耗资源，可以适当增加配置文件中thread_cache_size值，查询服务器 thread_cache_size配置
 
 ```
-mysql> show variables like ``'thread_cache_size'``;``+-------------------+-------+``| Variable_name   | Value |``+-------------------+-------+``| thread_cache_size | 64  |``+-------------------+-------+
+mysql> show variables like 'thread_cache_size';
++-------------------+-------+
+| Variable_name     | Value |
++-------------------+-------+
+| thread_cache_size | 64    |
++-------------------+-------+
 ```
 
 7）**查询缓存(query cache)**
@@ -171,7 +251,19 @@ mysql> show variables like ``'thread_cache_size'``;``+-------------------+------
 很多 LAMP 应用程序都严重依赖于数据库，但却会反复执行相同的查询。每次执行查询时，数据库都必须要执行相同的工作 —— 对查询进行分析，确定如何执行查询，从磁盘中加载信息，然后将结果返回给客户机。MySQL 有一个特性称为*查询缓存*，它将（后面会用到的）查询结果保存在内存中。在很多情况下，这会极大地提高性能。不过，问题是查询缓存在默认情况下是禁用的
 
 ```
-mysql> show global status like ``'qcache%'``;``+-------------------------+-----------+``| Variable_name      | Value   |``+-------------------------+-----------+``| Qcache_free_blocks   | 22756   |``| Qcache_free_memory   | 76764704 |``| Qcache_hits       | 213028692 |``| Qcache_inserts     | 208894227 |``| Qcache_lowmem_prunes  | 4010916  |``| Qcache_not_cached    | 13385031 |``| Qcache_queries_in_cache | 43560   |``| Qcache_total_blocks   | 111212  |``+-------------------------+-----------+
+mysql> show global status like 'qcache%';
++-------------------------+-----------+
+| Variable_name           | Value     |
++-------------------------+-----------+
+| Qcache_free_blocks      | 22756     |
+| Qcache_free_memory      | 76764704  |
+| Qcache_hits             | 213028692 |
+| Qcache_inserts          | 208894227 |
+| Qcache_lowmem_prunes    | 4010916   |
+| Qcache_not_cached       | 13385031  |
+| Qcache_queries_in_cache | 43560     |
+| Qcache_total_blocks     | 111212    |
++-------------------------+-----------+
 ```
 
 MySQL查询缓存变量解释：
@@ -195,7 +287,16 @@ Qcache_total_blocks：缓存中块的数量。
 我们再查询一下服务器关于query_cache的配置
 
 ```
-mysql> show variables like ``'query_cache%'``;``+------------------------------+-----------+``| Variable_name       | Value   |``+------------------------------+-----------+``| query_cache_limit     | 2097152 |``| query_cache_min_res_unit   | 4096  |``| query_cache_size     | 203423744 |``| query_cache_type     | ON    |``| query_cache_wlock_invalidate | OFF  |``+------------------------------+-----------+
+mysql> show variables like 'query_cache%';
++------------------------------+-----------+
+| Variable_name             | Value     |
++------------------------------+-----------+
+| query_cache_limit          | 2097152 |
+| query_cache_min_res_unit     | 4096    |
+| query_cache_size          | 203423744 |
+| query_cache_type          | ON        |
+| query_cache_wlock_invalidate | OFF    |
++------------------------------+-----------+
 ```
 
 各字段的解释：
@@ -225,7 +326,15 @@ query_cache_size可能有点小，要不就是碎片太多。
 8）**排序使用情况**
 
 ```
-mysql> show global status like ``'sort%'``;``+-------------------+------------+``| Variable_name   | Value   |``+-------------------+------------+``| Sort_merge_passes | 29     |``| Sort_range    | 37432840  |``| Sort_rows     | 9178691532 |``| Sort_scan     | 1860569  |``+-------------------+------------+
+mysql> show global status like 'sort%';
++-------------------+------------+
+| Variable_name     | Value      |
++-------------------+------------+
+| Sort_merge_passes | 29         |
+| Sort_range        | 37432840   |
+| Sort_rows         | 9178691532 |
+| Sort_scan         | 1860569    |
++-------------------+------------+
 ```
 
 Sort_merge_passes 包括两步。MySQL 首先会尝试在内存中做排序，使用的内存大小由系统变量Sort_buffer_size 决定，如果它的大小不够把所有的记录都读到内存中，MySQL 就会把每次在内存中排序的结果存到临时文件中，等MySQL 找到所有记录之后，再把临时文件中的记录做一次排序。这再次排序就会增加 Sort_merge_passes。实际上，MySQL会用另一个临时文件来存再次排序的结果，所以通常会看到 Sort_merge_passes增加的数值是建临时文件数的两倍。因为用到了临时文件，所以速度可能会比较慢，增加 Sort_buffer_size 会减少Sort_merge_passes 和 创建临时文件的次数，但盲目的增加Sort_buffer_size 并不一定能提高速度
@@ -233,13 +342,30 @@ Sort_merge_passes 包括两步。MySQL 首先会尝试在内存中做排序，�
 **9）文件打开数(open_files)**
 
 ```
-mysql> show global status like ``'open_files'``;``+---------------+-------+``| Variable_name | Value |``+---------------+-------+``| Open_files  | 1410 |``+---------------+-------+``mysql> show variables like ``'open_files_limit'``;``+------------------+-------+``| Variable_name  | Value |``+------------------+-------+``| open_files_limit | 4590 |``+------------------+-------+
+mysql> show global status like 'open_files';
++---------------+-------+
+| Variable_name | Value |
++---------------+-------+
+| Open_files    | 1410  |
++---------------+-------+
+mysql> show variables like 'open_files_limit';
++------------------+-------+
+| Variable_name    | Value |
++------------------+-------+
+| open_files_limit | 4590  |
++------------------+-------+
 ```
 
 比较合适的设置：Open_files / open_files_limit * 100% <= 75％
 
 ```
-mysql> show global status like ``'table_locks%'``;``+-----------------------+-----------+``| Variable_name     | Value   |``+-----------------------+-----------+``| Table_locks_immediate | 490206328 |``| Table_locks_waited  | 2084912  |``+-----------------------+-----------+
+mysql> show global status like 'table_locks%';
++-----------------------+-----------+
+| Variable_name         | Value     |
++-----------------------+-----------+
+| Table_locks_immediate | 490206328 |
+| Table_locks_waited    | 2084912   |
++-----------------------+-----------+
 ```
 
 Table_locks_immediate 表示立即释放表锁数，Table_locks_waited表示需要等待的表锁数
@@ -249,7 +375,13 @@ Table_locks_immediate 表示立即释放表锁数，Table_locks_waited表示需�
 10）**表锁情况**
 
 ```
-mysql> show global status like ``'table_locks%'``;``+-----------------------+-----------+``| Variable_name     | Value   |``+-----------------------+-----------+``| Table_locks_immediate | 490206328 |``| Table_locks_waited  | 2084912  |``+-----------------------+-----------+
+mysql> show global status like 'table_locks%';
++-----------------------+-----------+
+| Variable_name         | Value     |
++-----------------------+-----------+
+| Table_locks_immediate | 490206328 |
+| Table_locks_waited    | 2084912   |
++-----------------------+-----------+
 ```
 
 Table_locks_immediate 表示立即释放表锁数，Table_locks_waited表示需要等待的表锁数
@@ -259,7 +391,23 @@ Table_locks_immediate 表示立即释放表锁数，Table_locks_waited表示需�
 11）**表扫描情况**
 
 ```
-mysql> show global status like ``'handler_read%'``;``+-----------------------+-------------+``| Variable_name     | Value    |``+-----------------------+-------------+``| Handler_read_first  | 5803750   |``| Handler_read_key   | 6049319850 |``| Handler_read_next   | 94440908210 |``| Handler_read_prev   | 34822001724 |``| Handler_read_rnd   | 405482605  |``| Handler_read_rnd_next | 18912877839 |``+-----------------------+-------------+``mysql> show global status like ``'com_select'``;``+---------------+-----------+``| Variable_name | Value   |``+---------------+-----------+``| Com_select  | 222693559 |``+---------------+-----------+
+mysql> show global status like 'handler_read%';
++-----------------------+-------------+
+| Variable_name         | Value       |
++-----------------------+-------------+
+| Handler_read_first    | 5803750     |
+| Handler_read_key      | 6049319850  |
+| Handler_read_next     | 94440908210 |
+| Handler_read_prev     | 34822001724 |
+| Handler_read_rnd      | 405482605   |
+| Handler_read_rnd_next | 18912877839 |
++-----------------------+-------------+
+mysql> show global status like 'com_select';
++---------------+-----------+
+| Variable_name | Value     |
++---------------+-----------+
+| Com_select    | 222693559 |
++---------------+-----------+
 ```
 
 计算表扫描率：
@@ -272,7 +420,22 @@ mysql> show global status like ``'handler_read%'``;``+-----------------------+--
 表定义信息缓存是从MySQL5.1.3 版本才开始引入的一个新的缓存区，用来存放表定义信息。当我们的MySQL 中使用了较多的表的时候，此缓存无疑会提高对表定义信息的访问效率。MySQL 提供了table_definition_cache 参数给我们设置可以缓存的表的数量。在MySQL5.1.25 之前的版本中，默认值为128，从MySQL5.1.25 版本开始，则将默认值调整为256 了，最大设置值为524288，当前版本默认值为528。注意，这里设置的是可以缓存的表定义信息的数目，而不是内存空间的大小
 
 ```
-mysql> show global variables like ``'%definition%'``;``+------------------------+-------+``| Variable_name     | Value |``+------------------------+-------+``| table_definition_cache | 528  |``+------------------------+-------+``1 row ``in` `set` `(0.00 sec)` `mysql> show status like ``'%definition%'``;  ``+--------------------------+-------+``| Variable_name      | Value |``+--------------------------+-------+``| Open_table_definitions  | 70  |``| Opened_table_definitions | 0   |``+--------------------------+-------+``2 rows ``in` `set` `(0.02 sec)
+mysql> show global variables like '%definition%';
++------------------------+-------+
+| Variable_name          | Value |
++------------------------+-------+
+| table_definition_cache | 528   |
++------------------------+-------+
+1 row in set (0.00 sec)
+ 
+mysql> show status like '%definition%';    
++--------------------------+-------+
+| Variable_name            | Value |
++--------------------------+-------+
+| Open_table_definitions   | 70    |
+| Opened_table_definitions | 0     |
++--------------------------+-------+
+2 rows in set (0.02 sec)
 ```
 
  
@@ -297,7 +460,16 @@ innodb的内存的作用大致如下
 缓冲池是最大块的内存部分，主要用来各种数据的缓冲。innodb将数据文件按页（16K）读取到缓冲池，然后按最少使用（LRU)算法来保留缓存数据；数据文件修改时，先修改缓存池中的页（即脏页），然后按一定平率将脏页刷新到文件
 
 ```
-mysql> show variables like ``'innodb_%_size'``;``+---------------------------------+------------+``| Variable_name          | Value   |``+---------------------------------+------------+``| innodb_additional_mem_pool_size | 2097152  |``| innodb_buffer_pool_size     | 2013265920 |``| innodb_log_buffer_size     | 8388608  |``| innodb_log_file_size      | 1048576000 |``+---------------------------------+------------+``4 rows ``in` `set` `(0.00 sec)
+mysql> show variables like 'innodb_%_size';
++---------------------------------+------------+
+| Variable_name                   | Value      |
++---------------------------------+------------+
+| innodb_additional_mem_pool_size | 2097152    |
+| innodb_buffer_pool_size         | 2013265920 |
+| innodb_log_buffer_size          | 8388608    |
+| innodb_log_file_size            | 1048576000 |
++---------------------------------+------------+
+4 rows in set (0.00 sec)
 ```
 
 按照数据页的类型
@@ -312,7 +484,24 @@ mysql> show variables like ``'innodb_%_size'``;``+------------------------------
 通过show engine innodb status可以查看缓冲池的具体信息
 
 ```
-BUFFER POOL AND MEMORY``----------------------``Total memory allocated 2058485760; ``in` `additional pool allocated 0``Dictionary memory allocated 819282``Buffer pool size  122879``Free buffers    97899``Database pages   24014``Old database pages 8844``Modified db pages 8``Pending reads 0``Pending writes: LRU 0, flush list 0, single page 0``Pages made young 6, not young 0``0.00 youngs/s, 0.00 non-youngs/s``Pages read 1049, created 41540, written 30276412``0.00 reads/s, 0.00 creates/s, 1.55 writes/s``Buffer pool hit rate 1000 / 1000, young-making rate 0 / 1000 not 0 / 1000``Pages read ahead 0.00/s, evicted without access 0.00/s, Random read ahead 0.00/s``LRU len: 24014, unzip_LRU len: 0
+BUFFER POOL AND MEMORY
+----------------------
+Total memory allocated 2058485760; in additional pool allocated 0
+Dictionary memory allocated 819282
+Buffer pool size   122879
+Free buffers       97899
+Database pages     24014
+Old database pages 8844
+Modified db pages  8
+Pending reads 0
+Pending writes: LRU 0, flush list 0, single page 0
+Pages made young 6, not young 0
+0.00 youngs/s, 0.00 non-youngs/s
+Pages read 1049, created 41540, written 30276412
+0.00 reads/s, 0.00 creates/s, 1.55 writes/s
+Buffer pool hit rate 1000 / 1000, young-making rate 0 / 1000 not 0 / 1000
+Pages read ahead 0.00/s, evicted without access 0.00/s, Random read ahead 0.00/s
+LRU len: 24014, unzip_LRU len: 0
 ```
 
 这边的单位是buffer frame，每个buffer frame为16K，通过计算可以查看buffer pool的使用情况
@@ -342,13 +531,43 @@ BUFFER POOL AND MEMORY``----------------------``Total memory allocated 205848576
 **4）内存计算**
 
 ```
-used_Mem =``+ key_buffer_size``+ query_cache_size``+ innodb_buffer_pool_size``+ innodb_additional_mem_pool_size``+ innodb_log_buffer_size``+ max_connections *(``    ``+ read_buffer_size``  ``+ read_rnd_buffer_size``  ``+ sort_buffer_size``  ``+ join_buffer_size``  ``+ binlog_cache_size``  ``+ thread_stack``  ``+ tmp_table_size``  ``+ bulk_insert_buffer_size``)
+used_Mem =
++ key_buffer_size
++ query_cache_size
++ innodb_buffer_pool_size
++ innodb_additional_mem_pool_size
++ innodb_log_buffer_size
++ max_connections *(
+       + read_buffer_size
+    + read_rnd_buffer_size
+    + sort_buffer_size
+    + join_buffer_size
+    + binlog_cache_size
+    + thread_stack
+    + tmp_table_size
+    + bulk_insert_buffer_size
+)
 ```
 
  sql
 
 ```
-SELECT (``@@key_buffer_size +``@@query_cache_size +``@@tmp_table_size +``@@innodb_buffer_pool_size +``@@innodb_additional_mem_pool_size +``@@innodb_log_buffer_size +``@@max_connections * ( ``@@read_buffer_size +``@@read_rnd_buffer_size +``@@sort_buffer_size +``@@join_buffer_size +``@@binlog_cache_size +``@@thread_stack +``@@bulk_insert_buffer_size ) ) /``@giga_bytes AS MAX_MEMORY_GB;
+SELECT (
+@@key_buffer_size +
+@@query_cache_size +
+@@tmp_table_size +
+@@innodb_buffer_pool_size +
+@@innodb_additional_mem_pool_size +
+@@innodb_log_buffer_size +
+@@max_connections * (  
+@@read_buffer_size +
+@@read_rnd_buffer_size +
+@@sort_buffer_size +
+@@join_buffer_size +
+@@binlog_cache_size +
+@@thread_stack +
+@@bulk_insert_buffer_size ) ) /
+@giga_bytes AS MAX_MEMORY_GB;
 ```
 
  
@@ -363,3 +582,4 @@ http://news.oneapm.com/php-xhprof-xhgui/
 http://mp.weixin.qq.com/s?__biz=MjM5NDE0MjI4MA==&mid=208777870&idx=1&sn=6efddd6283e4deb3fe55a141b0db965c&scene=1&srcid=0910kYIbazQSBqZEivwahGHB&key=dffc561732c2265104613d6540d35b8ad5c92c340ed903cbbd8218ac9ba70f5b9d36aaa09033e2f9cf0e7983792311d4&ascene=1&uin=MjM2NjkwNQ%3D%3D&devicetype=Windows+7&version=61020020&pass_ticket=JuXI39h6lA0f0sHQ0AFMc7g2Z4NJXU5U71301BBDAuw%3D
 
 http://pingzhao1990.blog.163.com/blog/static/113566342201531583628765/　
+
