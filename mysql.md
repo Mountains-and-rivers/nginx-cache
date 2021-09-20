@@ -570,6 +570,7 @@ SELECT (
 @giga_bytes AS MAX_MEMORY_GB;
 ```
 
+
  
 参考文章
 
@@ -582,4 +583,8 @@ http://news.oneapm.com/php-xhprof-xhgui/
 http://mp.weixin.qq.com/s?__biz=MjM5NDE0MjI4MA==&mid=208777870&idx=1&sn=6efddd6283e4deb3fe55a141b0db965c&scene=1&srcid=0910kYIbazQSBqZEivwahGHB&key=dffc561732c2265104613d6540d35b8ad5c92c340ed903cbbd8218ac9ba70f5b9d36aaa09033e2f9cf0e7983792311d4&ascene=1&uin=MjM2NjkwNQ%3D%3D&devicetype=Windows+7&version=61020020&pass_ticket=JuXI39h6lA0f0sHQ0AFMc7g2Z4NJXU5U71301BBDAuw%3D
 
 http://pingzhao1990.blog.163.com/blog/static/113566342201531583628765/　
+
+监控指标  
+
+https://blog.csdn.net/tjiyu/article/details/106057996
 
