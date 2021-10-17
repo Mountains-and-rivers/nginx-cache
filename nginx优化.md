@@ -6,11 +6,11 @@
 
 如图：多个静态文件 Waiting(TTFB) 时间过长
 
-图片-------------------
+![image](https://github.com/Mountains-and-rivers/nginx-cache/blob/main/image/01.png)
 
 如图：Waiting(TTFB) 时间过长
 
-图片-------------------
+![image](https://github.com/Mountains-and-rivers/nginx-cache/blob/main/image/02n.png)
 
 都是静态资源，文件也不大，试了全站 CDN 和单个文件 CDN 没有任何效果，后来怀疑是Nginx 配置问题。经过查询文档检查配置最终找到问题。
 
@@ -61,7 +61,7 @@ proxy_cache_path /usr/local/nginx/cache/ levels=1:2 keys_zone=imgcache:100m inac
 再来看看现在，静态资源加载的速度，保持在100ms以内
 ```
 
-图片-------------------
+![image](https://github.com/Mountains-and-rivers/nginx-cache/blob/main/image/03.png)
 
 解决办法第三步，启用 http2 协议（可选）
 HTTP/2（超文本传输协议第2版，最初命名为HTTP 2.0），简称为h2（基于TLS/1.2或以上版本的加密连接）或h2c（非加密连接），是HTTP协议的的第二个主要版本，使用于万维网。
@@ -116,7 +116,7 @@ https://haydenjames.io/nginx-tuning-tips-tls-ssl-https-ttfb-latency/
 
 现在我们在测试一下，访问一个网页正常使用nginx加载需要传输多大size的流量，可以看到一个网页文本7.7k，两张图片分别时11.9k和7.6k
 
-图片--------------------
+![image](https://github.com/Mountains-and-rivers/nginx-cache/blob/main/image/04.png)
 
 现在我们来配置一下nginx的配置文件里面开启gzip压缩
 
@@ -127,7 +127,7 @@ https://haydenjames.io/nginx-tuning-tips-tls-ssl-https-ttfb-latency/
     gzip_types   text/plain application/x-javascript text/css application/xml text/javascript  image/jpeg image/gif image/png;
 ```
 
-图片--------------------
+![image](https://github.com/Mountains-and-rivers/nginx-cache/blob/main/image/05.png)
 
 现在我们可以看到压缩传输后的结果
 
@@ -135,11 +135,11 @@ https://haydenjames.io/nginx-tuning-tips-tls-ssl-https-ttfb-latency/
 
 我们在nginx里面的conf/nginx.conf文件开启缓存
 
-图片--------------------
+![image](https://github.com/Mountains-and-rivers/nginx-cache/blob/main/image/06.png)
 
 这样我们在刷新请求网页第二次的时候，就是从缓存里面获取图片了，这样加载速度就更快了
 
-图片--------------------
+![image](https://github.com/Mountains-and-rivers/nginx-cache/blob/main/image/07.png)
 
 # 三、Nginx性能优化功能-Gzip压缩(大幅度提高页面加载速度)
 
@@ -194,11 +194,11 @@ http {
 
 如下可知, 文件没有被压缩,文件传输大小还是400多K
 
-图片--------------------
+![image](https://github.com/Mountains-and-rivers/nginx-cache/blob/main/image/08.png)
 
 如果开启Nginx的Gzip压缩功能(即打开Gzip的相关配置), 然后再次访问test.bmp图片, 发现压缩后的该图片文件传输大小只有200多K !
 
-图片--------------------
+![image](https://github.com/Mountains-and-rivers/nginx-cache/blob/main/image/09.png)
 
 通过上面测试对比, 发现Nginx开启Gzip压缩功能后, 定义的gzip type的文件在传输时的大小明显变小, 这样这会大大提高nginx访问性能.
 
