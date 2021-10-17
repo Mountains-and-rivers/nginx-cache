@@ -2,8 +2,6 @@
 
 # 前因后果
 
-网站每次加载都需要等待两三秒，一直以为是带宽问题（因为带宽真的小，钱的问题），后来开了全站 CDN 加速依然没有解决问题，今天正好没事就研究研究。
-
 如图：多个静态文件 Waiting(TTFB) 时间过长
 
 ![image](https://github.com/Mountains-and-rivers/nginx-cache/blob/main/image/01.png)
